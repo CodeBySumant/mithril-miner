@@ -9,8 +9,6 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 public final class BlockScanner {
@@ -18,46 +16,49 @@ public final class BlockScanner {
     private final MinecraftClient mc = MinecraftClient.getInstance();
 
     /**
-     * Find all mithril blocks matching the given priority tier
-     * within [radius] blocks, excluding the blacklist.
+     * Finds the closest valid Mithril block to the player's crosshair
+     * within a strict maximum distance, ignoring tier priorities.
      */
-    public List<BlockPos> findMithril(int priority, int radius, List<BlockPos> blacklist) {
+    public BlockPos findClosestToCrosshair(double maxDistance, List<BlockPos> blacklist) {
         ClientWorld world = mc.world;
-        if (world == null || mc.player == null) return List.of();
+        if (world == null || mc.player == null) return null;
 
         BlockPos origin = mc.player.getBlockPos();
-        List<BlockPos> results = new ArrayList<>();
+        int r = (int) Math.ceil(maxDistance);
+        BlockPos bestPos = null;
+        double bestCost = Double.MAX_VALUE;
+        Vec3d eyePos = mc.player.getEyePos();
 
-        for (int dx = -radius; dx <= radius; dx++) {
-            for (int dy = -radius; dy <= radius; dy++) {
-                for (int dz = -radius; dz <= radius; dz++) {
+        for (int dx = -r; dx <= r; dx++) {
+            for (int dy = -r; dy <= r; dy++) {
+                for (int dz = -r; dz <= r; dz++) {
                     BlockPos pos = origin.add(dx, dy, dz);
                     if (blacklist.contains(pos)) continue;
-                    if (!MithrilBlocks.predicateForPriority(priority).test(world.getBlockState(pos))) continue;
+
+                    // 1. Enforce strict distance from player's eyes
+                    if (eyePos.distanceTo(Vec3d.ofCenter(pos)) > maxDistance) continue;
+
+                    // 2. Must be ANY tier of Mithril
+                    if (!MithrilBlocks.isMithril(world, pos)) continue;
+
+                    // 3. Must be mineable and visible
                     if (!canMineBlock(pos)) continue;
-                    results.add(pos);
+                    if (!hasLineOfSight(pos)) continue;
+
+                    // 4. Find the one closest to the center of your screen
+                    double cost = rotationCost(pos);
+                    if (cost < bestCost) {
+                        bestCost = cost;
+                        bestPos = pos;
+                    }
                 }
             }
         }
-
-        results.sort(Comparator.comparingDouble(this::rotationCost));
-        return results;
-    }
-
-    /**
-     * Scan tiers in priority order, returning the first non-empty tier's results.
-     */
-    public List<BlockPos> findByPriorityOrder(int[] priorityOrder, int radius, List<BlockPos> blacklist) {
-        for (int tier : priorityOrder) {
-            List<BlockPos> found = findMithril(tier, radius, blacklist);
-            if (!found.isEmpty()) return found;
-        }
-        return List.of();
+        return bestPos;
     }
 
     /**
      * A block is mineable if at least one adjacent face is air or non-opaque.
-     * Uses isOpaque() — compatible with 1.21.x (isTransparent was removed).
      */
     public boolean canMineBlock(BlockPos pos) {
         ClientWorld world = mc.world;

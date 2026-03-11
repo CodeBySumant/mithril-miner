@@ -1,7 +1,7 @@
 package com.mithrilminer.macro;
 
 import com.mithrilminer.MithrilMinerMod;
-import com.mithrilminer.mixin.BreakProgressTracker;
+import com.mithrilminer.util.BreakProgressTracker;
 import com.mithrilminer.util.BlockScanner;
 import com.mithrilminer.util.MithrilBlocks;
 import com.mithrilminer.util.RotationHandler;
@@ -23,12 +23,12 @@ import java.util.List;
  * Core mithril mining state machine.
  *
  * States:
- *   IDLE           – macro is off
- *   FIND_BLOCK     – scanning for the best nearby mithril block
- *   ROTATE_TO_BLOCK – smoothly turning to face the target block
- *   MINE_BLOCK     – holding left-click to mine
- *   STUCK_CHECK    – block not breaking, blacklist and retry
- *   COOLDOWN       – pause after too many stuck events
+ * IDLE           – macro is off
+ * FIND_BLOCK     – scanning for the best nearby mithril block
+ * ROTATE_TO_BLOCK – smoothly turning to face the target block
+ * MINE_BLOCK     – holding left-click to mine
+ * STUCK_CHECK    – block not breaking, blacklist and retry
+ * COOLDOWN       – pause after too many stuck events
  */
 public final class MithrilMacro {
 
@@ -112,18 +112,14 @@ public final class MithrilMacro {
         rotation.reset();
         ticksNoProgress = 0;
 
-        List<BlockPos> candidates = scanner.findByPriorityOrder(
-                getPriorityOrder(),
-                MithrilMinerMod.config.searchRadius,
-                blacklist
-        );
+        // Use the new crosshair-based scanner with a max distance of 4.0 blocks
+        targetBlock = scanner.findClosestToCrosshair(4.0, blacklist);
 
-        if (candidates.isEmpty()) {
-            statusMessage = "No mithril nearby (r=" + MithrilMinerMod.config.searchRadius + ")";
+        if (targetBlock == null) {
+            statusMessage = "No mithril in view (max 4m)";
             return;
         }
 
-        targetBlock = candidates.get(0);
         int tier = MithrilBlocks.getTier(mc.world, targetBlock);
         statusMessage = "Found " + MithrilBlocks.tierName(tier) + " @ " + targetBlock.toShortString();
         log(statusMessage);
@@ -257,15 +253,6 @@ public final class MithrilMacro {
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
-
-    private int[] getPriorityOrder() {
-        return new int[]{
-            MithrilMinerMod.config.priority1,
-            MithrilMinerMod.config.priority2,
-            MithrilMinerMod.config.priority3,
-            MithrilMinerMod.config.priority4
-        };
-    }
 
     private int getBreakProgress(BlockPos pos) {
         if (mc.world == null) return -1;

@@ -1,5 +1,6 @@
 package com.mithrilminer.mixin;
 
+import com.mithrilminer.util.BreakProgressTracker;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.network.packet.s2c.play.BlockBreakingProgressS2CPacket;

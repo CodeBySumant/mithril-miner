@@ -1,4 +1,4 @@
-package com.mithrilminer.mixin;
+package com.mithrilminer.util;
 
 import net.minecraft.util.math.BlockPos;
 
