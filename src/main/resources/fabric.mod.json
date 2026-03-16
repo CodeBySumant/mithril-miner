@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "id": "mithrilminer",
+  "id": "skyblock_helper",
   "version": "${version}",
-  "name": "Mithril Miner",
-  "description": "Automated Mithril mining macro for Hypixel SkyBlock",
-  "authors": ["MithrilMiner"],
+  "name": "SkyBlock Helper",
+  "description": "Client utility helper for Hypixel SkyBlock",
+  "authors": ["SkyBlockHelper"],
   "contact": {},
   "license": "MIT",
-  "icon": "assets/mithrilminer/icon.png",
+  "icon": "assets/skyblock_helper/icon.png",
   "environment": "client",
   "entrypoints": {
     "client": [
@@ -15,7 +15,7 @@
     ]
   },
   "mixins": [
-    "mithrilminer.mixins.json"
+    "skyblock_helper.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.18.4",
